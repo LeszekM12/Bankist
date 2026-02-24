@@ -59,3 +59,103 @@ const inputLoanAmount = document.querySelector('.form__input--loan-amount');
 const inputCloseUsername = document.querySelector('.form__input--user');
 const inputClosePin = document.querySelector('.form__input--pin');
 
+const displayMovements = movements => {
+  containerMovements.innerHTML = '';
+
+  movements.forEach((mov, i) => {
+
+    const type = mov > 0 ? 'deposit' : 'withdrawal';
+
+    const html = `
+      <div class="movements">
+        <div class="movements__row">
+        <div class="movements__type movements__type--${type}">${i + 1} ${type}</div>
+        <div class="movements__value">${mov}€</div>
+       </div>
+    `;
+
+    containerMovements.insertAdjacentHTML('afterbegin', html);
+
+  });
+};
+
+
+const calcDisplayBalance = movements => {
+  const balance = movements.reduce((acc, mov) => acc + mov, 0);
+  labelBalance.textContent = `${balance}€`;
+
+  const max = movements.reduce((acc, mov) => {
+    if (acc > mov) return acc;
+    else return mov;
+  }, movements[0]);
+
+  const eurToUsd = 1.1;
+  const totalDepositsUSD = movements
+    .filter(mov => mov > 0)
+    .map(mov => mov * eurToUsd)
+    .reduce((acc, mov) => acc + mov, 0)
+  ;
+  // console.log(totalDepositsUSD);
+};
+
+
+const calcDisplaySummary = account => {
+  const incomes = account.movements
+    .filter(mov => mov > 0)
+    .reduce((acc, mov) => acc + mov, 0)
+  labelSumIn.textContent = `${incomes}€`;
+
+  const outcomes = account.movements
+    .filter(mov => mov < 0)
+    .reduce((acc, mov) => acc + mov, 0)
+  labelSumOut.textContent = `${Math.abs(outcomes)}€`
+
+  const interest = account.movements
+    .filter(mov => mov > 0)
+    .map(deposit => deposit * account.interestRate / 100)
+    .filter(mov => mov > 1)
+    .reduce((acc, int) => acc + int, 0)
+    .toFixed(2);
+  labelSumInterest.textContent = `${interest}€`;
+}
+
+const createUsernames = accounts => {
+  accounts.forEach(acc => {
+    acc.username = acc.owner
+      .toLowerCase()
+      .split(' ')
+      .map(name => name[0])
+      .join('');
+  });
+};
+createUsernames(accounts);
+
+// Event handler
+btnLogin.addEventListener('click', (e) => {
+  e.preventDefault();
+
+  const currentAccount = accounts
+    .find(acc => acc.username === inputLoginUsername.value);
+  // console.log(currentAccount);
+  // Logging the user
+  if (currentAccount?.pin === inputLoginPin.value * 1) {
+    // Display UI and message
+    containerApp.style.opacity = 1;
+    labelWelcome.textContent = `Welcome back ${currentAccount.owner.split(' ')[0]}`
+
+    // Clear inputs
+    inputLoginUsername.value = inputLoginPin.value = '';
+
+    // Display movements
+    displayMovements(currentAccount.movements);
+    calcDisplayBalance(currentAccount.movements);
+    calcDisplaySummary(currentAccount);
+  }
+})
+
+
+
+
+
+
+
