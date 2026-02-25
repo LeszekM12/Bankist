@@ -59,10 +59,15 @@ const inputLoanAmount = document.querySelector('.form__input--loan-amount');
 const inputCloseUsername = document.querySelector('.form__input--user');
 const inputClosePin = document.querySelector('.form__input--pin');
 
-const displayMovements = movements => {
+let currentAccount;
+
+
+const displayMovements = (movements, sort = false) => {
   containerMovements.innerHTML = '';
 
-  movements.forEach((mov, i) => {
+  const moves = sort ? movements.slice().sort((a, b) => a - b) : movements;
+
+  moves.forEach((mov, i) => {
 
     const type = mov > 0 ? 'deposit' : 'withdrawal';
 
@@ -80,22 +85,22 @@ const displayMovements = movements => {
 };
 
 
-const calcDisplayBalance = movements => {
-  const balance = movements.reduce((acc, mov) => acc + mov, 0);
-  labelBalance.textContent = `${balance}€`;
+const calcDisplayBalance = account => {
+  account.balance = account.movements.reduce((acc, mov) => acc + mov, 0);
+  labelBalance.textContent = `${account.balance}€`;
 
-  const max = movements.reduce((acc, mov) => {
-    if (acc > mov) return acc;
-    else return mov;
-  }, movements[0]);
+  // const max = movements.reduce((acc, mov) => {
+  //   if (acc > mov) return acc;
+  //   else return mov;
+  // }, movements[0]);
 
-  const eurToUsd = 1.1;
-  const totalDepositsUSD = movements
-    .filter(mov => mov > 0)
-    .map(mov => mov * eurToUsd)
-    .reduce((acc, mov) => acc + mov, 0)
-  ;
-  // console.log(totalDepositsUSD);
+  // const eurToUsd = 1.1;
+  // const totalDepositsUSD = movements
+  //   .filter(mov => mov > 0)
+  //   .map(mov => mov * eurToUsd)
+  //   .reduce((acc, mov) => acc + mov, 0)
+  // ;
+  // // console.log(totalDepositsUSD);
 };
 
 
@@ -130,11 +135,17 @@ const createUsernames = accounts => {
 };
 createUsernames(accounts);
 
+const updateUI = (currentAccount) => {
+  displayMovements(currentAccount.movements);
+  calcDisplayBalance(currentAccount);
+  calcDisplaySummary(currentAccount);
+};
+
 // Event handler
 btnLogin.addEventListener('click', (e) => {
   e.preventDefault();
 
-  const currentAccount = accounts
+  currentAccount = accounts
     .find(acc => acc.username === inputLoginUsername.value);
   // console.log(currentAccount);
   // Logging the user
@@ -146,11 +157,68 @@ btnLogin.addEventListener('click', (e) => {
     // Clear inputs
     inputLoginUsername.value = inputLoginPin.value = '';
 
-    // Display movements
-    displayMovements(currentAccount.movements);
-    calcDisplayBalance(currentAccount.movements);
-    calcDisplaySummary(currentAccount);
+    // Update UI
+    updateUI(currentAccount);
   }
+});
+
+btnTransfer.addEventListener('click', (e) => {
+  e.preventDefault();
+  const amount = inputTransferAmount.value * 1;
+  const receiverAcc = accounts.find(
+    acc => acc.username === inputTransferTo.value
+  );
+
+  inputTransferTo.value = inputTransferAmount.value = '';
+
+  if (
+    amount > 0 &&
+    receiverAcc &&
+    currentAccount.balance >= amount &&
+    receiverAcc?.username !== currentAccount.username
+  ) {
+    // Transfer
+    currentAccount.movements.push(-amount);
+    receiverAcc.movements.push(amount);
+
+    // Update UI
+    updateUI(currentAccount);
+  }
+});
+
+btnLoan.addEventListener('click', (e) => {
+  e.preventDefault();
+  const amount = inputLoanAmount.value * 1;
+
+  if (amount > 0 && currentAccount.movements.some(mov => mov >= amount * 0.1)) {
+    // Add movement
+    currentAccount.movements.push(amount);
+
+    updateUI(currentAccount);
+    inputLoanAmount.value = '';
+  }
+})
+
+btnClose.addEventListener('click', (e) => {
+  e.preventDefault();
+
+  if (
+    inputCloseUsername.value === currentAccount.username &&
+    inputClosePin.value * 1 === currentAccount.pin
+  ) {
+    const index = accounts.findIndex(acc => acc.username === currentAccount.username);
+
+    accounts.splice(index, 1);
+    containerApp.style.opacity = 0;
+    labelWelcome.textContent = 'Log in to get started'
+  }
+});
+
+let sorted = false;
+btnSort.addEventListener('click', (e) => {
+  e.preventDefault();
+  displayMovements(currentAccount.movements, !sorted);
+  sorted = !sorted;
 })
 
 
