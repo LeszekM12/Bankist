@@ -73,7 +73,7 @@ const inputClosePin = document.querySelector('.form__input--pin');
 
 let currentAccount;
 
-const formatMovementDate = (date) => {
+const formatMovementDate = (date, locale) => {
   const calcDaysPassed = (date1, date2) =>
     Math.round(Math.abs(date2 - date1) / (1000 * 60 * 60 * 24));
 
@@ -84,10 +84,7 @@ const formatMovementDate = (date) => {
   if (daysPassed === 1) return 'Yesterday';
   if (daysPassed <= 7) return `${daysPassed} days ago`;
   else {
-    const day = `${date.getDay()}`.padStart(2, '0');
-    const month = `${date.getMonth() + 1}`.padStart(2, '0');
-    const year = date.getFullYear();
-    return `${day}/${month}/${year}`;
+    return new Intl.DateTimeFormat(locale).format(date);
   }
 };
 
@@ -110,7 +107,7 @@ const displayMovements = (account, sort = false) => {
     const type = movement > 0 ? 'deposit' : 'withdrawal';
 
     const date = new Date(movementDate);
-    const displayDate = formatMovementDate(date);
+    const displayDate = formatMovementDate(date, account.locale);
 
     const html = `
       <div class="movements">
@@ -188,6 +185,7 @@ currentAccount = account1;
 updateUI(currentAccount);
 containerApp.style.opacity = 1;
 
+
 // Event handler
 btnLogin.addEventListener('click', (e) => {
   e.preventDefault();
@@ -201,12 +199,18 @@ btnLogin.addEventListener('click', (e) => {
     containerApp.style.opacity = 1;
 
     const now = new Date()
-    const day = `${now.getDay()}`.padStart(2, '0');
-    const month = `${now.getMonth() + 1}`.padStart(2, '0');
-    const year = now.getFullYear();
-    const hour = `${now.getHours()}`.padStart(2, '0');
-    const minute = `${now.getMinutes()}`.padStart(2, '0');
-    labelDate.textContent = `${day}/${month}/${year}/${hour}:${minute}`;
+    const options = {
+      hour: 'numeric',
+      minute: 'numeric',
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric',
+      weekday: 'short',
+    }
+    const locale = navigator.language;
+
+    labelDate.textContent = new Intl.DateTimeFormat(locale, options).format(now);
+
 
     labelWelcome.textContent = `Welcome back ${currentAccount.owner.split(' ')[0]}`
 
