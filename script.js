@@ -78,7 +78,6 @@ const formatMovementDate = (date, locale) => {
     Math.round(Math.abs(date2 - date1) / (1000 * 60 * 60 * 24));
 
   const daysPassed = calcDaysPassed(new Date(), date);
-  console.log(daysPassed);
 
   if (daysPassed === 0) return 'Today';
   if (daysPassed === 1) return 'Yesterday';
@@ -87,6 +86,13 @@ const formatMovementDate = (date, locale) => {
     return new Intl.DateTimeFormat(locale).format(date);
   }
 };
+
+const formatCur = (value, locale, currency) => {
+  return new Intl.NumberFormat(locale, {
+    style: 'currency',
+    currency: currency,
+  }).format(value);
+}
 
 const displayMovements = (account, sort = false) => {
   containerMovements.innerHTML = '';
@@ -109,12 +115,14 @@ const displayMovements = (account, sort = false) => {
     const date = new Date(movementDate);
     const displayDate = formatMovementDate(date, account.locale);
 
+    const formattedMov = formatCur(movement, account.locale, account.currency);
+
     const html = `
       <div class="movements">
         <div class="movements__row">
         <div class="movements__type movements__type--${type}">${i + 1} ${type}</div>
         <div class="movements__date">${displayDate}</div>
-        <div class="movements__value">${movement.toFixed(2)}€</div>
+        <div class="movements__value">${formattedMov}</div>
        </div>
     `;
 
@@ -126,33 +134,19 @@ const displayMovements = (account, sort = false) => {
 
 const calcDisplayBalance = account => {
   account.balance = account.movements.reduce((acc, mov) => acc + mov, 0);
-  labelBalance.textContent = `${account.balance.toFixed(2)}€`;
-
-  // const max = movements.reduce((acc, mov) => {
-  //   if (acc > mov) return acc;
-  //   else return mov;
-  // }, movements[0]);
-
-  // const eurToUsd = 1.1;
-  // const totalDepositsUSD = movements
-  //   .filter(mov => mov > 0)
-  //   .map(mov => mov * eurToUsd)
-  //   .reduce((acc, mov) => acc + mov, 0)
-  // ;
-  // // console.log(totalDepositsUSD);
-};
+  labelBalance.textContent = formatCur(account.balance, account.locale, account.currency)};
 
 
 const calcDisplaySummary = account => {
   const incomes = account.movements
     .filter(mov => mov > 0)
     .reduce((acc, mov) => acc + mov, 0)
-  labelSumIn.textContent = `${incomes.toFixed(2)}€`;
+  labelSumIn.textContent = formatCur(incomes, account.locale, account.currency);
 
   const outcomes = account.movements
     .filter(mov => mov < 0)
     .reduce((acc, mov) => acc + mov, 0)
-  labelSumOut.textContent = `${Math.abs(outcomes).toFixed(2)}€`;
+  labelSumOut.textContent = formatCur(Math.abs(outcomes), account.locale, account.currency);
 
   const interest = account.movements
     .filter(mov => mov > 0)
@@ -160,7 +154,7 @@ const calcDisplaySummary = account => {
     .filter(mov => mov > 1)
     .reduce((acc, int) => acc + int, 0)
     .toFixed(2);
-  labelSumInterest.textContent = `${interest}€`;
+  labelSumInterest.textContent = formatCur(interest, account.locale, account.currency);
 }
 
 const createUsernames = accounts => {
