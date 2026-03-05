@@ -71,7 +71,6 @@ const inputLoanAmount = document.querySelector('.form__input--loan-amount');
 const inputCloseUsername = document.querySelector('.form__input--user');
 const inputClosePin = document.querySelector('.form__input--pin');
 
-let currentAccount;
 
 const formatMovementDate = (date, locale) => {
   const calcDaysPassed = (date1, date2) =>
@@ -174,11 +173,40 @@ const updateUI = (currentAccount) => {
   calcDisplaySummary(currentAccount);
 };
 
-// Always logged in
-currentAccount = account1;
-updateUI(currentAccount);
-containerApp.style.opacity = 1;
+const startLogOutTimer = () => {
+  const tick = () => {
+    const min = String(Math.trunc(time / 60)).padStart(2, '0');
+    const sec = String(time % 60).padStart(2, '0');
 
+    // In each call, print the remaining time to UI
+    labelTimer.textContent = `${min}:${sec}`;
+
+    // When the time 0, stop timer and log out user
+    if (time === 0) {
+      clearInterval(timer);
+      containerApp.style.opacity = 0;
+      labelWelcome.textContent = 'Log in to get started';
+    }
+    time--;
+  };
+
+  // Set time to 5min
+  let time = 120;
+
+  // Call the timer every second
+
+  const timer = setInterval(tick, 1000);
+
+  return timer;
+};
+
+// Always logged in
+// currentAccount = account1;
+// startLogOutTimer();
+// updateUI(currentAccount);
+// containerApp.style.opacity = 1;
+
+let currentAccount, timer;
 
 // Event handler
 btnLogin.addEventListener('click', (e) => {
@@ -186,7 +214,6 @@ btnLogin.addEventListener('click', (e) => {
 
   currentAccount = accounts
     .find(acc => acc.username === inputLoginUsername.value);
-  // console.log(currentAccount);
   // Logging the user
   if (currentAccount?.pin === inputLoginPin.value * 1) {
     // Display UI and message
@@ -210,6 +237,10 @@ btnLogin.addEventListener('click', (e) => {
 
     // Clear inputs
     inputLoginUsername.value = inputLoginPin.value = '';
+
+    // Timer
+    if (timer) clearInterval(timer);
+    timer = startLogOutTimer();
 
     // Update UI
     updateUI(currentAccount);
@@ -241,6 +272,10 @@ btnTransfer.addEventListener('click', (e) => {
 
     // Update UI
     updateUI(currentAccount);
+
+    // Reset the timer
+    clearInterval(timer);
+    timer = startLogOutTimer();
   }
 });
 
@@ -249,13 +284,20 @@ btnLoan.addEventListener('click', (e) => {
   const amount = Math.floor(inputLoanAmount.value);
 
   if (amount > 0 && currentAccount.movements.some(mov => mov >= amount * 0.1)) {
-    // Add movement
-    currentAccount.movements.push(amount);
+    setTimeout(() => {
+      // Add movement
+      currentAccount.movements.push(amount);
 
-    // Add transfer date
-    currentAccount.movementsDates.push(new Date().toISOString());
+      // Add transfer date
+      currentAccount.movementsDates.push(new Date().toISOString());
 
-    updateUI(currentAccount);
+      updateUI(currentAccount);
+
+      // Reset the timer
+      clearInterval(timer);
+      timer = startLogOutTimer();
+
+    }, 2000)
     inputLoanAmount.value = '';
   }
 })
